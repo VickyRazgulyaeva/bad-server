@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { NextFunction, Request, Response } from 'express'
 import BadRequestError from '../errors/bad-request-error'
 
-const CSRF_COOKIE_NAME = 'csrfToken'
+const CSRF_COOKIE_NAME = '_csrf'
 const CSRF_HEADER_NAME = 'x-csrf-token'
 
 export function generateCsrfToken(_req: Request, res: Response) {
