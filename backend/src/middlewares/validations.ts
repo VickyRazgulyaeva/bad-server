@@ -13,7 +13,9 @@ export enum PaymentType {
 export const validateOrderBody = celebrate({
     body: Joi.object().keys({
         items: Joi.array()
-            .items(
+    .min(1)
+    .max(20)
+    .items(
                 Joi.string().custom((value, helpers) => {
                     if (Types.ObjectId.isValid(value)) {
                         return value
@@ -38,13 +40,13 @@ export const validateOrderBody = celebrate({
         phone: Joi.string().required().pattern(phoneRegExp).messages({
             'string.empty': 'Не указан телефон',
         }),
-        address: Joi.string().required().messages({
+        address: Joi.string().max(200).required().messages({
             'string.empty': 'Не указан адрес',
         }),
         total: Joi.number().required().messages({
             'string.empty': 'Не указана сумма заказа',
         }),
-        comment: Joi.string().optional().allow(''),
+        comment: Joi.string().max(1000).optional().allow(''),
     }),
 })
 
@@ -64,7 +66,7 @@ export const validateProductBody = celebrate({
         category: Joi.string().required().messages({
             'string.empty': 'Поле "category" должно быть заполнено',
         }),
-        description: Joi.string().required().messages({
+        description: Joi.string().max(1000).required().messages({
             'string.empty': 'Поле "description" должно быть заполнено',
         }),
         price: Joi.number().allow(null),

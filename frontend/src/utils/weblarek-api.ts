@@ -33,6 +33,7 @@ export type ApiListResponse<Type> = {
 class Api {
     private readonly baseUrl: string
     protected options: RequestInit
+    private csrfToken: string | null = null
 
     constructor(baseUrl: string, options: RequestInit = {}) {
         this.baseUrl = baseUrl
@@ -53,8 +54,32 @@ class Api {
                   )
     }
 
+    private async loadCsrfToken() {
+        const res = await fetch(`${this.baseUrl}/auth/csrf-token`, {
+            method: 'GET',
+            credentials: 'include',
+        })
+
+        const data = await this.handleResponse<{ csrfToken: string }>(res)
+        this.csrfToken = data.csrfToken
+    }
+
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
+            const method = options.method?.toUpperCase() || 'GET'
+            const unsafeMethods = ['POST', 'PATCH', 'DELETE']
+
+            if (unsafeMethods.includes(method)) {
+                if (!this.csrfToken) {
+                    await this.loadCsrfToken()
+                }
+
+                options.headers = {
+                    ...((options.headers as object) ?? {}),
+                    'X-CSRF-Token': this.csrfToken || '',
+                }
+            }
+
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
                 ...options,
@@ -87,7 +112,7 @@ class Api {
             return await this.request<T>(endpoint, {
                 ...options,
                 headers: {
-                    ...options.headers,
+                    ...((options.headers as object) ?? {}),
                     Authorization: `Bearer ${getCookie('accessToken')}`,
                 },
             })
@@ -293,13 +318,12 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
 
     logoutUser = () => {
         return this.request<ServerResponse<unknown>>('/auth/logout', {
-            method: 'GET',
+            method: 'POST',
             credentials: 'include',
         })
     }
 
     createProduct = (data: Omit<IProduct, '_id'>) => {
-        console.log(data)
         return this.requestWithRefresh<IProduct>('/product', {
             method: 'POST',
             body: JSON.stringify(data),

@@ -9,6 +9,8 @@ import { DB_ADDRESS } from './config'
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
+import mongoSanitize from './middlewares/mongo-sanitize'
+import { csrfProtection } from './middlewares/csrf'
 
 const { PORT = 3000 } = process.env
 const app = express()
@@ -21,8 +23,12 @@ app.use(cors())
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
-app.use(urlencoded({ extended: true }))
-app.use(json())
+app.use(urlencoded({ extended: true, limit: '10kb' }))
+app.use(json({ limit: '10kb' }))
+
+app.use(csrfProtection) 
+
+app.use(mongoSanitize)
 
 app.options('*', cors())
 app.use(routes)

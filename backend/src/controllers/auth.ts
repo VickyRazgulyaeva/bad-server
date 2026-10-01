@@ -191,15 +191,23 @@ const updateCurrentUser = async (
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
+    const { name, phone } = req.body
+
     try {
-        const updatedUser = await User.findByIdAndUpdate(userId, req.body, {
-            new: true,
-        }).orFail(
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { name, phone },
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
+
         res.status(200).json(updatedUser)
     } catch (error) {
         next(error)

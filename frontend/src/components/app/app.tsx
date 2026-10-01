@@ -155,11 +155,11 @@ const RouteComponent = () => {
                         element={<OrderAddress />}
                     />
                     <Route
-                        path={AppRoute.OrderAddress}
+                        path={AppRoute.OrderContacts}
                         element={<OrderContacts />}
                     />
                     <Route
-                        path={AppRoute.OrderAddress}
+                        path={AppRoute.OrderSuccess}
                         element={<OrderSuccess />}
                     />
                 </Route>
@@ -296,7 +296,6 @@ const RouteComponent = () => {
                                 </Modal>
                             }
                         />
-
                         <Route
                             path={AppRoute.AdminCustomer}
                             element={
@@ -305,7 +304,6 @@ const RouteComponent = () => {
                                 </Modal>
                             }
                         />
-
                         <Route
                             path={AppRoute.EditProduct}
                             element={
@@ -319,7 +317,6 @@ const RouteComponent = () => {
                             }
                         />
                     </Route>
-
                     <Route path={AppRoute.Profile} element={<ProfilePage />}>
                         <Route
                             path={AppRoute.ProfileOrder}
