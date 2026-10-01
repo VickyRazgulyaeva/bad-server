@@ -14,10 +14,14 @@ import { csrfProtection } from './middlewares/csrf'
 
 const { PORT = 3000 } = process.env
 const app = express()
+const corsOptions = {
+    origin: process.env.ORIGIN_ALLOW || 'http://localhost',
+    credentials: true,
+}
 
 app.use(cookieParser())
 
-app.use(cors())
+app.use(cors(corsOptions))
 // app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
 // app.use(express.static(path.join(__dirname, 'public')));
 
@@ -26,11 +30,11 @@ app.use(serveStatic(path.join(__dirname, 'public')))
 app.use(urlencoded({ extended: true, limit: '10kb' }))
 app.use(json({ limit: '10kb' }))
 
-app.use(csrfProtection) 
+app.use(csrfProtection)
 
 app.use(mongoSanitize)
 
-app.options('*', cors())
+app.options('*', cors(corsOptions))
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)
