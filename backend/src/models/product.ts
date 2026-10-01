@@ -1,6 +1,6 @@
 import { unlink } from 'fs'
 import mongoose, { Document } from 'mongoose'
-import { join } from 'path'
+import { basename, join } from 'path'
 
 export interface IFile {
     fileName: string
@@ -13,6 +13,17 @@ export interface IProduct extends Document {
     category: string
     description: string
     price: number
+}
+
+const getImagePath = (fileName: string) =>
+    join(__dirname, '../public/images', basename(fileName))
+
+const removeImage = (fileName?: string) => {
+    if (!fileName) {
+        return
+    }
+
+    unlink(getImagePath(fileName), () => {})
 }
 
 const cardsSchema = new mongoose.Schema<IProduct>(
@@ -48,24 +59,20 @@ const cardsSchema = new mongoose.Schema<IProduct>(
 
 cardsSchema.index({ title: 'text' })
 
-// Можно лучше: удалять старое изображением перед обновлением сущности
 cardsSchema.pre('findOneAndUpdate', async function deleteOldImage() {
     // @ts-ignore
     const updateImage = this.getUpdate().$set?.image
     const docToUpdate = await this.model.findOne(this.getQuery())
-    if (updateImage && docToUpdate) {
-        unlink(
-            join(__dirname, `../public/${docToUpdate.image.fileName}`),
-            (err) => console.log(err)
-        )
+
+    if (updateImage && docToUpdate?.image?.fileName) {
+        removeImage(docToUpdate.image.fileName)
     }
 })
 
-// Можно лучше: удалять файл с изображением после удаление сущности
-cardsSchema.post('findOneAndDelete', async (doc: IProduct) => {
-    unlink(join(__dirname, `../public/${doc.image.fileName}`), (err) =>
-        console.log(err)
-    )
+cardsSchema.post('findOneAndDelete', async (doc: IProduct | null) => {
+    if (doc?.image?.fileName) {
+        removeImage(doc.image.fileName)
+    }
 })
 
 export default mongoose.model<IProduct>('product', cardsSchema)

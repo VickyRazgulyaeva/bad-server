@@ -3,6 +3,29 @@ import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
+import escapeRegExp from '../utils/escapeRegExp'
+
+const MAX_LIMIT = 10
+
+function normalizeLimit(limit: unknown) {
+    const parsedLimit = Number(limit)
+
+    if (!Number.isFinite(parsedLimit) || parsedLimit < 1) {
+        return MAX_LIMIT
+    }
+
+    return Math.min(parsedLimit, MAX_LIMIT)
+}
+
+function normalizePage(page: unknown) {
+    const parsedPage = Number(page)
+
+    if (!Number.isFinite(parsedPage) || parsedPage < 1) {
+        return 1
+    }
+
+    return parsedPage
+}
 
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
@@ -28,6 +51,8 @@ export const getCustomers = async (
             orderCountTo,
             search,
         } = req.query
+        const normalizedPage = normalizePage(page)
+        const normalizedLimit = normalizeLimit(limit)
 
         const filters: FilterQuery<Partial<IUser>> = {}
 
@@ -92,7 +117,7 @@ export const getCustomers = async (
         }
 
         if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+            const searchRegex = new RegExp(escapeRegExp(search as string), 'i')
             const orders = await Order.find(
                 {
                     $or: [{ deliveryAddress: searchRegex }],
@@ -116,8 +141,8 @@ export const getCustomers = async (
 
         const options = {
             sort,
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (normalizedPage - 1) * normalizedLimit,
+            limit: normalizedLimit,
         }
 
         const users = await User.find(filters, null, options).populate([
@@ -137,15 +162,15 @@ export const getCustomers = async (
         ])
 
         const totalUsers = await User.countDocuments(filters)
-        const totalPages = Math.ceil(totalUsers / Number(limit))
+        const totalPages = Math.ceil(totalUsers / normalizedLimit)
 
         res.status(200).json({
             customers: users,
             pagination: {
                 totalUsers,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: normalizedPage,
+                pageSize: normalizedLimit,
             },
         })
     } catch (error) {
@@ -179,11 +204,14 @@ export const updateCustomer = async (
     next: NextFunction
 ) => {
     try {
+        const { name, phone } = req.body
+
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            { name, phone },
             {
                 new: true,
+                runValidators: true,
             }
         )
             .orFail(
@@ -193,6 +221,7 @@ export const updateCustomer = async (
                     )
             )
             .populate(['orders', 'lastOrder'])
+
         res.status(200).json(updatedUser)
     } catch (error) {
         next(error)
